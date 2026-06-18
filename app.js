@@ -7,11 +7,11 @@ let carrosSelecionados = [];
 let carrosFiltrados    = [];
 
 // ---- INIT ----
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  await carregarPlanilha(); // carrega os dados do Google Sheets
   renderBrands();
   renderTeam();
 });
-
 // ============================================================
 // MARCAS
 // ============================================================
