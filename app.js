@@ -249,11 +249,12 @@ function renderCompareTable(carros, scores) {
 // EQUIPE
 // ============================================================
 const EQUIPE = [
-  { nome: "Eduarda Nobre",    iniciais: "EN", foto: null },
-  { nome: "Thaís Domingues",  iniciais: "TD", foto: null },
-  { nome: "William Bertolotto",iniciais:"WB", foto: null },
-  { nome: "Diana Soares",     iniciais: "DS", foto: null },
-  { nome: "Tainara Sales",    iniciais: "TS", foto: null },
+  { nome: "Eduarda Nobre",      iniciais: "EN", foto: "fotos/eduarda.jpeg" },
+  { nome: "Thaís Domingues",    iniciais: "TD", foto: "fotos/thais.jpeg" },
+  { nome: "William Bertolotto", iniciais: "WB", foto: "fotos/william.jpeg" },
+  { nome: "Diana Soares",       iniciais: "DS", foto: "fotos/diana.jpeg" },
+  { nome: "Taynara Sales",      iniciais: "TS", foto: "fotos/taynara.jpeg" },
+  { nome: "Douglas",            iniciais: "DG", foto: "fotos/douglas.jpeg" },
 ];
 
 function renderTeam() {
