@@ -50,7 +50,7 @@ async function carregarPlanilha() {
         manutencao:    c[9]?.trim().toLowerCase(),
         desvalorizacao:c[10]?.trim().toLowerCase(),
         seguranca:     c[11]?.trim().toLowerCase(),
-        img:           c[12]?.trim() ?? "",
+        img: "",  // sem imagem na planilha
       };
     }).filter(c => c.nome); // remove linhas vazias
   } catch(e) {
