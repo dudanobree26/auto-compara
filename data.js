@@ -1,10 +1,8 @@
-cat > /mnt/user-data/outputs/data.js << 'EOF'
 // ============================================================
 // AUTOCOMPARA — Base de Dados de Veículos
 // ⚠️ Dados estimados — podem conter inconsistências
 // Fontes: Webmotors, Tabela FIPE, Salão do Automóvel, relatórios do setor
 // ============================================================
-
 const MARCAS = [
   { id: "chevrolet", nome: "Chevrolet", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1f/Chevrolet_logo_gold.svg/200px-Chevrolet_logo_gold.svg.png" },
   { id: "hyundai",   nome: "Hyundai",   logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/92/Hyundai_Motor_Company_logo.svg/200px-Hyundai_Motor_Company_logo.svg.png" },
@@ -24,52 +22,128 @@ const MARCAS = [
   { id: "ram",       nome: "RAM",       logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cb/RAM_Trucks_logo.svg/200px-RAM_Trucks_logo.svg.png" },
   { id: "byd",       nome: "BYD",       logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/BYD_Auto_logo.svg/200px-BYD_Auto_logo.svg.png" },
 ];
-
-// Preenchido via planilha; se falhar, fica vazio e o site avisa o usuário
 let CARROS = [];
-
+// Helper functions for CSV and string processing
+function parseCSVLine(line) {
+  let fields = [];
+  let current = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    let char = line[i];
+    if (char === '"') {
+      inQuotes = !inQuotes;
+    } else if (char === ',' && !inQuotes) {
+      fields.push(current);
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  fields.push(current);
+  return fields;
+}
+function normalizeText(str) {
+  if (!str) return "";
+  return str.trim().toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, ""); // removes accents/diacritics
+}
+function normalizeMarca(str) {
+  if (!str) return "";
+  let clean = str.trim().toLowerCase();
+  if (clean.includes("citro")) return "citroen";
+  return clean.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+function parsePreco(str) {
+  if (!str) return 0;
+  // Clean up dashes and spaces
+  let clean = str.replace(/â€“/g, '-').replace(/–/g, '-').replace(/\s+/g, '');
+  let match = clean.match(/(\d+)(?:-(\d+))?mil/i);
+  if (match) {
+    let min = Number(match[1]);
+    let max = match[2] ? Number(match[2]) : min;
+    return ((min + max) / 2) * 1000;
+  }
+  let numMatch = clean.match(/\d+/);
+  return numMatch ? Number(numMatch[0]) * 1000 : 0;
+}
+function parseConsumo(str) {
+  if (!str) return 0;
+  let clean = str.replace(/â€“/g, '-').replace(/–/g, '-').replace(/,/g, '.').replace(/\s+/g, '');
+  let matches = clean.match(/(\d+(?:\.\d+)?)(?:-(\d+(?:\.\d+)?))?/g);
+  if (matches) {
+    let sum = 0;
+    let count = 0;
+    for (let m of matches) {
+      let rangeMatch = m.match(/(\d+(?:\.\d+)?)(?:-(\d+(?:\.\d+)?))?/);
+      if (rangeMatch) {
+        let min = Number(rangeMatch[1]);
+        let max = rangeMatch[2] ? Number(rangeMatch[2]) : min;
+        sum += (min + max) / 2;
+        count++;
+      }
+    }
+    if (count > 0) return sum / count;
+  }
+  return 0;
+}
+function parsePotencia(str) {
+  if (!str) return 0;
+  let clean = str.replace(/â€“/g, '-').replace(/–/g, '-').replace(/\s+/g, '');
+  let match = clean.match(/(\d+)(?:-(\d+))?/);
+  if (match) {
+    let min = Number(match[1]);
+    let max = match[2] ? Number(match[2]) : min;
+    return (min + max) / 2;
+  }
+  return 0;
+}
+function parsePortamalas(str) {
+  if (!str) return 0;
+  let clean = str.replace(/\./g, '').replace(/\s+/g, '');
+  let match = clean.match(/\d+/);
+  return match ? Number(match[0]) : 0;
+}
 async function carregarPlanilha() {
   const URL =
     "https://docs.google.com/spreadsheets/d/e/2PACX-1vTfJg8Zq8CHvHtv15QZ252Ydvey0aiXt6h7mbxLthgneWB-oMPEiVl9x5Pp-zbzRZA2RHqgX36z9Py2/pub?gid=1782389322&single=true&output=csv";
-
   try {
     const res = await fetch(URL);
-
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
     const texto  = await res.text();
-    const linhas = texto.trim().split("\n").slice(1); // pula cabeçalho
-
+    // Normalize lines to avoid carriage return problems (\r)
+    const linhas = texto.replace(/\r/g, "").trim().split("\n").slice(1); // pula cabeçalho
     const parsed = linhas
       .map(linha => {
-        // suporta células com vírgula entre aspas (CSV básico)
-        const c = linha.split(",");
+        const c = parseCSVLine(linha);
+        if (c.length < 11) return null;
+        const marcaNorm = normalizeMarca(c[0]);
+        const nomeVeiculo = c[1]?.trim();
+        
+        // Generate unique vehicle ID
+        const veiculoClean = nomeVeiculo.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "");
+        const id = `${marcaNorm}_${veiculoClean}`;
         return {
-          id:             c[0]?.trim().toLowerCase().replace(/\s+/g, "_"),
-          marca:          c[1]?.trim().toLowerCase(),
-          nome:           c[2]?.trim(),
-          categoria:      c[3]?.trim(),
-          ano:            Number(c[4]),
-          preco:          Number(c[5]),
-          consumo:        Number(c[6]),
-          potencia:       Number(c[7]),
-          portamalas:     Number(c[8]),
-          manutencao:     c[9]?.trim().toLowerCase(),
-          desvalorizacao: c[10]?.trim().toLowerCase(),
-          seguranca:      c[11]?.trim().toLowerCase(),
+          id:             id,
+          marca:          marcaNorm,
+          nome:           nomeVeiculo,
+          categoria:      c[2]?.trim(),
+          ano:            Number(c[3]) || 2024,
+          preco:          parsePreco(c[4]),
+          consumo:        parseConsumo(c[5]),
+          potencia:       parsePotencia(c[6]),
+          portamalas:     parsePortamalas(c[7]),
+          manutencao:     c[8]?.trim(),
+          desvalorizacao: c[9]?.trim(),
+          seguranca:      c[10]?.trim(),
           img: "",
         };
       })
-      .filter(c => c.nome && c.id); // descarta linhas inválidas
-
+      .filter(c => c && c.nome && c.id);
     if (parsed.length === 0) throw new Error("Planilha retornou 0 registros");
-
     CARROS = parsed;
     console.info(`[AutoCompara] ${CARROS.length} veículos carregados.`);
-
   } catch (err) {
     console.error("[AutoCompara] Falha ao carregar planilha:", err);
-    // Mostra aviso amigável na tela (sem quebrar o resto do site)
     const grid = document.getElementById('brandsGrid');
     if (grid) {
       const aviso = document.createElement('p');
@@ -81,7 +155,6 @@ async function carregarPlanilha() {
     }
   }
 }
-
 // ============================================================
 // Pesos dos critérios
 // ============================================================
@@ -93,28 +166,41 @@ const PESOS = {
   seguranca:      0.10,
   portamalas:     0.05,
 };
-
 // ============================================================
 // Conversão de strings → scores numéricos (0–10)
 // ============================================================
-function scoreManutencao(v)     { return { acessivel: 10, media: 6, cara: 2 }[v]           ?? 5; }
-function scoreDesvalorizacao(v) { return { baixa: 10,    media: 6, alta: 2 }[v]             ?? 5; }
-function scoreSeguranca(v)      { return { excelente: 10, boa: 7, regular: 4, pessima: 1 }[v] ?? 5; }
-
+function scoreManutencao(v) {
+  const clean = normalizeText(v);
+  if (clean === "acessivel" || clean === "baixa") return 10;
+  if (clean === "media" || clean === "medio") return 6;
+  if (clean === "cara" || clean === "alta") return 2;
+  return 5;
+}
+function scoreDesvalorizacao(v) {
+  const clean = normalizeText(v);
+  if (clean === "baixa") return 10;
+  if (clean === "media" || clean === "medio") return 6;
+  if (clean === "alta") return 2;
+  return 5;
+}
+function scoreSeguranca(v) {
+  const clean = normalizeText(v);
+  if (clean === "excelente") return 10;
+  if (clean === "boa" || clean === "bom") return 7;
+  if (clean === "regular") return 4;
+  if (clean === "pessima" || clean === "ruim") return 1;
+  return 5;
+}
 function calcScore(carro, todos) {
   const precos   = todos.map(c => c.preco);
   const consumos = todos.map(c => c.consumo > 0 ? c.consumo : 15);
   const pts      = todos.map(c => c.portamalas);
-
   const norm    = (v, min, max) => max === min ? 5 : ((v - min)   / (max - min)) * 10;
   const normInv = (v, min, max) => max === min ? 5 : ((max - v)   / (max - min)) * 10;
-
   const minPreco = Math.min(...precos),  maxPreco = Math.max(...precos);
   const minCons  = Math.min(...consumos), maxCons = Math.max(...consumos);
   const minPt    = Math.min(...pts),      maxPt   = Math.max(...pts);
-
   const consumoVal = carro.consumo > 0 ? carro.consumo : 18;
-
   const s = {
     preco:          normInv(carro.preco,    minPreco, maxPreco),
     consumo:        norm(consumoVal,         minCons,  maxCons),
@@ -123,7 +209,6 @@ function calcScore(carro, todos) {
     seguranca:      scoreSeguranca(carro.seguranca),
     portamalas:     norm(carro.portamalas,  minPt,    maxPt),
   };
-
   const total =
     s.preco          * PESOS.preco          +
     s.consumo        * PESOS.consumo        +
@@ -131,8 +216,5 @@ function calcScore(carro, todos) {
     s.desvalorizacao * PESOS.desvalorizacao +
     s.seguranca      * PESOS.seguranca      +
     s.portamalas     * PESOS.portamalas;
-
   return { ...s, total };
 }
-EOF
-echo "data.js criado"
