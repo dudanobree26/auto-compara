@@ -21,8 +21,7 @@ function renderBrands() {
     <div class="brand-card" id="brand-${m.id}" onclick="toggleMarca('${m.id}')">
       <span class="brand-check">✓</span>
       <div class="brand-logo-wrap">
-        <img src="${m.logo}" alt="${m.nome}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2264%22 height=%2264%22><rect width=%2264%22 height=%2264%22 rx=%228%22 fill=%22%230057FF%22 opacity=%220.2%22/><text x=%2232%22 y=%2240%22 text-anchor=%22middle%22 fill=%22%234DA6FF%22 font-size=%2214%22 font-weight=%22bold%22 font-family=%22Arial%22>${m.nome[0]}</text></svg>'" />
-      </div>
+        <img src="${m.logo}" alt="${m.nome}" onerror="this.style.display='none'"
       <span class="brand-name">${m.nome}</span>
     </div>
   `).join('');
