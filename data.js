@@ -3,7 +3,6 @@
 // ⚠️ Dados estimados — podem conter inconsistências
 // Fontes: Webmotors, Tabela FIPE, Salão do Automóvel, relatórios do setor
 // ============================================================
-
 const MARCAS = [
   { id: "chevrolet", nome: "Chevrolet", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1f/Chevrolet_logo_gold.svg/200px-Chevrolet_logo_gold.svg.png" },
   { id: "hyundai",   nome: "Hyundai",   logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/92/Hyundai_Motor_Company_logo.svg/200px-Hyundai_Motor_Company_logo.svg.png" },
@@ -23,9 +22,7 @@ const MARCAS = [
   { id: "ram",       nome: "RAM",       logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cb/RAM_Trucks_logo.svg/200px-RAM_Trucks_logo.svg.png" },
   { id: "byd",       nome: "BYD",       logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/BYD_Auto_logo.svg/200px-BYD_Auto_logo.svg.png" },
 ];
-
 let CARROS = [];
-
 // Helper functions for CSV and string processing
 function parseCSVLine(line) {
   let fields = [];
@@ -45,20 +42,17 @@ function parseCSVLine(line) {
   fields.push(current);
   return fields;
 }
-
 function normalizeText(str) {
   if (!str) return "";
   return str.trim().toLowerCase()
     .normalize("NFD").replace(/[\u0300-\u036f]/g, ""); // removes accents/diacritics
 }
-
 function normalizeMarca(str) {
   if (!str) return "";
   let clean = str.trim().toLowerCase();
   if (clean.includes("citro")) return "citroen";
   return clean.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 }
-
 function parsePreco(str) {
   if (!str) return 0;
   // Clean up dashes and spaces
@@ -72,7 +66,6 @@ function parsePreco(str) {
   let numMatch = clean.match(/\d+/);
   return numMatch ? Number(numMatch[0]) * 1000 : 0;
 }
-
 function parseConsumo(str) {
   if (!str) return 0;
   let clean = str.replace(/â€“/g, '-').replace(/–/g, '-').replace(/,/g, '.').replace(/\s+/g, '');
@@ -93,7 +86,6 @@ function parseConsumo(str) {
   }
   return 0;
 }
-
 function parsePotencia(str) {
   if (!str) return 0;
   let clean = str.replace(/â€“/g, '-').replace(/–/g, '-').replace(/\s+/g, '');
@@ -105,39 +97,31 @@ function parsePotencia(str) {
   }
   return 0;
 }
-
 function parsePortamalas(str) {
   if (!str) return 0;
   let clean = str.replace(/\./g, '').replace(/\s+/g, '');
   let match = clean.match(/\d+/);
   return match ? Number(match[0]) : 0;
 }
-
 async function carregarPlanilha() {
   const URL =
     "https://docs.google.com/spreadsheets/d/e/2PACX-1vTfJg8Zq8CHvHtv15QZ252Ydvey0aiXt6h7mbxLthgneWB-oMPEiVl9x5Pp-zbzRZA2RHqgX36z9Py2/pub?gid=1782389322&single=true&output=csv";
-
   try {
     const res = await fetch(URL);
-
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
     const texto  = await res.text();
     // Normalize lines to avoid carriage return problems (\r)
     const linhas = texto.replace(/\r/g, "").trim().split("\n").slice(1); // pula cabeçalho
-
     const parsed = linhas
       .map(linha => {
         const c = parseCSVLine(linha);
         if (c.length < 11) return null;
-
         const marcaNorm = normalizeMarca(c[0]);
         const nomeVeiculo = c[1]?.trim();
         
         // Generate unique vehicle ID
         const veiculoClean = nomeVeiculo.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "");
         const id = `${marcaNorm}_${veiculoClean}`;
-
         return {
           id:             id,
           marca:          marcaNorm,
@@ -155,12 +139,9 @@ async function carregarPlanilha() {
         };
       })
       .filter(c => c && c.nome && c.id);
-
     if (parsed.length === 0) throw new Error("Planilha retornou 0 registros");
-
     CARROS = parsed;
     console.info(`[AutoCompara] ${CARROS.length} veículos carregados.`);
-
   } catch (err) {
     console.error("[AutoCompara] Falha ao carregar planilha:", err);
     const grid = document.getElementById('brandsGrid');
@@ -174,7 +155,6 @@ async function carregarPlanilha() {
     }
   }
 }
-
 // ============================================================
 // Pesos dos critérios
 // ============================================================
@@ -186,7 +166,6 @@ const PESOS = {
   seguranca:      0.10,
   portamalas:     0.05,
 };
-
 // ============================================================
 // Conversão de strings → scores numéricos (0–10)
 // ============================================================
@@ -197,7 +176,6 @@ function scoreManutencao(v) {
   if (clean === "cara" || clean === "alta") return 2;
   return 5;
 }
-
 function scoreDesvalorizacao(v) {
   const clean = normalizeText(v);
   if (clean === "baixa") return 10;
@@ -205,7 +183,6 @@ function scoreDesvalorizacao(v) {
   if (clean === "alta") return 2;
   return 5;
 }
-
 function scoreSeguranca(v) {
   const clean = normalizeText(v);
   if (clean === "excelente") return 10;
@@ -214,21 +191,16 @@ function scoreSeguranca(v) {
   if (clean === "pessima" || clean === "ruim") return 1;
   return 5;
 }
-
 function calcScore(carro, todos) {
   const precos   = todos.map(c => c.preco);
   const consumos = todos.map(c => c.consumo > 0 ? c.consumo : 15);
   const pts      = todos.map(c => c.portamalas);
-
   const norm    = (v, min, max) => max === min ? 5 : ((v - min)   / (max - min)) * 10;
   const normInv = (v, min, max) => max === min ? 5 : ((max - v)   / (max - min)) * 10;
-
   const minPreco = Math.min(...precos),  maxPreco = Math.max(...precos);
   const minCons  = Math.min(...consumos), maxCons = Math.max(...consumos);
   const minPt    = Math.min(...pts),      maxPt   = Math.max(...pts);
-
   const consumoVal = carro.consumo > 0 ? carro.consumo : 18;
-
   const s = {
     preco:          normInv(carro.preco,    minPreco, maxPreco),
     consumo:        norm(consumoVal,         minCons,  maxCons),
@@ -237,7 +209,6 @@ function calcScore(carro, todos) {
     seguranca:      scoreSeguranca(carro.seguranca),
     portamalas:     norm(carro.portamalas,  minPt,    maxPt),
   };
-
   const total =
     s.preco          * PESOS.preco          +
     s.consumo        * PESOS.consumo        +
@@ -245,6 +216,5 @@ function calcScore(carro, todos) {
     s.desvalorizacao * PESOS.desvalorizacao +
     s.seguranca      * PESOS.seguranca      +
     s.portamalas     * PESOS.portamalas;
-
   return { ...s, total };
 }
