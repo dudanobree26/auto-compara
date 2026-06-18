@@ -21,7 +21,8 @@ function renderBrands() {
     <div class="brand-card" id="brand-${m.id}" onclick="toggleMarca('${m.id}')">
       <span class="brand-check">✓</span>
       <div class="brand-logo-wrap">
-        <img src="${m.logo}" alt="${m.nome}" onerror="this.style.display='none'"
+        <img src="${m.logo}" alt="${m.nome}" onerror="this.style.display='none'" />
+      </div>
       <span class="brand-name">${m.nome}</span>
     </div>
   `).join('');
