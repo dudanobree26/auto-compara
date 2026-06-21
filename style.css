@@ -583,24 +583,45 @@ body {
   border-color: var(--blue);
   transform: translateY(-4px);
 }
+.team-avatar-link {
+  display: inline-block;
+  position: relative;
+  text-decoration: none;
+  margin: 0 auto 0.9rem;
+}
 .team-avatar {
   width: 80px;
   height: 80px;
   border-radius: 50%;
   margin: 0 auto 0.9rem;
+  margin: 0;
   overflow: hidden;
   border: 2px solid var(--gray-line);
   background: var(--gray-mid);
+.team-card:hover .team-avatar { border-color: var(--blue); }
+.team-linkedin-badge {
+  position: absolute;
+  bottom: 0px;
+  right: 0px;
+  width: 22px;
+  height: 22px;
+  background: #0077b5;
+  border: 2px solid var(--gray-mid);
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: var(--font-display);
-  font-size: 1.6rem;
-  font-weight: 800;
-  color: var(--blue-light);
-  transition: border-color var(--transition);
+  color: var(--white);
+  font-size: 0.65rem;
+  font-weight: bold;
+  font-family: var(--font-body);
+  transition: transform var(--transition), background-color var(--transition);
+  z-index: 10;
 }
-.team-card:hover .team-avatar { border-color: var(--blue); }
+.team-avatar-link:hover .team-linkedin-badge {
+  transform: scale(1.1);
+  background: #00a0dc;
+}
 .team-avatar img {
   width: 100%;
   height: 100%;
@@ -649,6 +670,64 @@ body {
 .footer-copy {
   font-size: 0.78rem;
   color: var(--white-dim);
+}
+/* ========== CATEGORY FILTERS ========== */
+.category-filter-wrap {
+  margin: 1.5rem 0 2rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.filter-label {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--white-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.category-filters {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+.filter-chip {
+  background: var(--white-ghost);
+  border: 1px solid var(--gray-line);
+  color: var(--white-dim);
+  padding: 0.5rem 1.2rem;
+  border-radius: 99px;
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition);
+  user-select: none;
+}
+.filter-chip:hover {
+  background: var(--white-ghost);
+  border-color: var(--blue-light);
+  color: var(--white);
+}
+.filter-chip.active {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: var(--white);
+  box-shadow: 0 4px 12px var(--blue-glow);
+}
+/* ========== CAR PHOTO AUTOMATIC ========== */
+.car-photo-loaded {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  z-index: 2;
+}
+.car-photo-visible {
+  opacity: 1 !important;
 }
 /* ========== RESPONSIVE ========== */
 @media (max-width: 768px) {
