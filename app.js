@@ -366,7 +366,7 @@ function renderCompareTable(carros, scores) {
     { label: 'Potência',     vals: carros.map(c => `${c.potencia} cv`) },
     { label: 'Porta-malas',  vals: carros.map(c => `${c.portamalas} L`) },
     { label: 'Manutenção',   vals: carros.map(c => c.manutencao),   field:'manutencao' },
-    { label: 'Desvalorização',vals: carros.map(c => c.desvalorizacao),field:'desvalorizacao' },
+    { label: 'Custo de desvalorização',vals: carros.map(c => c.desvalorizacao),field:'desvalorizacao' },
     { label: 'Segurança',    vals: carros.map(c => c.seguranca),    field:'seguranca' },
     { label: 'Pontuação',    vals: scores.map(s => s.total.toFixed(2) + '/10'), highlight: true },
   ];
